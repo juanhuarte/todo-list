@@ -18,13 +18,18 @@ const SignUp = () => {
          value: '',
          error: '',
       },
+      image: {
+         value: '',
+         error: '',
+      },
    })
 
    const inputHandler = (e) => {
       setUser({
          ...user,
          [e.target.name]: {
-            value: e.target.value,
+            value:
+               e.target.name === 'image' ? e.target.files[0] : e.target.value,
             error: '',
          },
       })
@@ -34,24 +39,42 @@ const SignUp = () => {
       e.preventDefault()
       // no mandar la request al back si algun campo tiene error con valor
 
-      if (
-         !touched ||
-         Object.keys(user).some((property) => user[property].error.length)
-      ) {
-         alert('Todos los campos son obligatorios!')
-         return
-      }
+      // if (
+      //    !touched ||
+      //    Object.keys(user).some((property) => user[property].error.length)
+      // ) {
+      //    alert('Todos los campos son obligatorios!')
+      //    return
+      // }
       try {
+         const formdata = new FormData()
+         formdata.append('firstName', user.firstName.value)
+         formdata.append('username', user.username.value)
+         formdata.append('password', user.password.value)
+         formdata.append('image', user.image.value)
          const { data } = await axios.post(
             'http://localhost:4000/api/user/sign-up',
-            {
-               firstName: user.firstName.value,
-               username: user.username.value,
-               password: user.password.value,
-            }
+            formdata
          )
          if (!data.success) {
-            alert('Algo falló')
+            // setUser({
+            //    ...user,
+            //    [data.error.details[0].path[0]]: {
+            //       ...user[data.error.details[0].path[0]],
+            //       error: data.error.details[0].message,
+            //    },
+            // })
+            for (const propiedad in data.error) {
+               setUser((state) => {
+                  return {
+                     ...state,
+                     [propiedad]: {
+                        ...state[propiedad],
+                        error: data.error[propiedad],
+                     },
+                  }
+               })
+            }
             return
          }
          alert('Usuario creado')
@@ -60,17 +83,17 @@ const SignUp = () => {
          alert(e.message)
       }
    }
-
+   console.log(user)
    const validateInput = (e) => {
       if (!touched) touched = true
-      if (!e.target.value)
-         setUser({
-            ...user,
-            [e.target.name]: {
-               value: e.target.value,
-               error: 'No puede estar vacío',
-            },
-         })
+      // if (!e.target.value)
+      //    setUser({
+      //       ...user,
+      //       [e.target.name]: {
+      //          value: e.target.value,
+      //          error: 'No puede estar vacío',
+      //       },
+      //    })
    }
    return (
       <div className='sign_container'>
@@ -103,6 +126,8 @@ const SignUp = () => {
                onBlur={validateInput}
             />
             <p className='error'>{user.password.error}</p>
+            <input type='file' name='image' onChange={inputHandler} />
+            <p className='error'>{user.image.error}</p>
             <button>Enviar</button>
          </form>
          <p className='redireccion'>
